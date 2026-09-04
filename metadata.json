@@ -1,0 +1,6 @@
+{
+  "name": "TerraAlert",
+  "description": "AI and IoT Landslide Early Warning and Disaster Management Platform for North-Eastern India",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

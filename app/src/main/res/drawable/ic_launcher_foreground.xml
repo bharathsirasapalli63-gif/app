@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Shield Base Container (Safe Zone centered: bounds ~26 to 82) -->
+    <path
+        android:pathData="M54,26 C66,26 77,29 80,33 C80,53 69,72 54,82 C39,72 28,53 28,33 C31,29 42,26 54,26 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="54"
+                android:startY="26"
+                android:endX="54"
+                android:endY="82"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#1A365D" />
+                <item android:offset="1.0" android:color="#0F213A" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Shield Border Accent Glow -->
+    <path
+        android:pathData="M54,26 C66,26 77,29 80,33 C80,53 69,72 54,82 C39,72 28,53 28,33 C31,29 42,26 54,26 Z"
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="2.5" />
+
+    <!-- Mountain Ridge Slope in Background of Shield -->
+    <path
+        android:fillColor="#2D4A77"
+        android:pathData="M33,65 L48,46 L58,56 L75,67 C68,73 61,78 54,81 C47,78 39,72 33,65 Z" />
+
+    <!-- Mountain Peak (Himalayan Ridge) -->
+    <path
+        android:fillColor="#4A709C"
+        android:pathData="M48,46 L55,37 L66,51 L58,56 Z" />
+    <path
+        android:fillColor="#E2E8F0"
+        android:pathData="M55,37 L58,42 L52,43 Z" />
+
+    <!-- Landslide Hazard Warning Triangle Emblem (Amber Alert) -->
+    <path
+        android:fillColor="#FF9800"
+        android:pathData="M54,44 L68,68 L40,68 Z" />
+
+    <!-- Hazard Triangle Inner Dark Accent -->
+    <path
+        android:fillColor="#211100"
+        android:pathData="M54,49 L64,66 L44,66 Z" />
+
+    <!-- Exclamation Mark in Hazard Triangle -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M53,53 L55,53 L54.7,60 L53.3,60 Z" />
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M54,62.5 A1.2,1.2 0 1,0 54,64.9 A1.2,1.2 0 1,0 54,62.5" />
+
+    <!-- Telemetry Pulse Broadcast Rings Above -->
+    <path
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M44,32 C47,29 51,28 54,28 C57,28 61,29 64,32" />
+</vector>
