@@ -3,6 +3,7 @@ package com.example.ui.gis
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -54,6 +55,7 @@ fun GisRiskCanvasMap(
     isHeroMode: Boolean = true
 ) {
     var activeBasemap by remember(mapLayers.basemapType) { mutableStateOf(mapLayers.basemapType) }
+    var isWhiteTheme by remember { mutableStateOf(true) }
     var zoomScale by remember { mutableFloatStateOf(1.0f) }
     var panOffset by remember { mutableStateOf(Offset.Zero) }
     var isFullscreenOpen by remember { mutableStateOf(false) }
@@ -71,6 +73,8 @@ fun GisRiskCanvasMap(
             selectedZoneId = selectedZoneId,
             mapLayers = mapLayers,
             activeBasemap = activeBasemap,
+            isWhiteTheme = isWhiteTheme,
+            onToggleTheme = { isWhiteTheme = !isWhiteTheme },
             zoomScale = zoomScale,
             panOffset = panOffset,
             onZoomChange = { zoomScale = it },
@@ -91,7 +95,7 @@ fun GisRiskCanvasMap(
         ) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = NavyDark
+                color = if (isWhiteTheme) Color(0xFFF8FAFC) else NavyDark
             ) {
                 GisMapContent(
                     locations = locations,
@@ -100,6 +104,8 @@ fun GisRiskCanvasMap(
                     selectedZoneId = selectedZoneId,
                     mapLayers = mapLayers,
                     activeBasemap = activeBasemap,
+                    isWhiteTheme = isWhiteTheme,
+                    onToggleTheme = { isWhiteTheme = !isWhiteTheme },
                     zoomScale = zoomScale,
                     panOffset = panOffset,
                     onZoomChange = { zoomScale = it },
@@ -123,6 +129,8 @@ private fun GisMapContent(
     selectedZoneId: String,
     mapLayers: MapLayerConfig,
     activeBasemap: GisBasemapType,
+    isWhiteTheme: Boolean,
+    onToggleTheme: () -> Unit,
     zoomScale: Float,
     panOffset: Offset,
     onZoomChange: (Float) -> Unit,
@@ -180,11 +188,26 @@ private fun GisMapContent(
         modifier = modifier
             .clip(if (isFullscreen) RoundedCornerShape(0.dp) else RoundedCornerShape(16.dp))
             .background(
-                when (activeBasemap) {
-                    GisBasemapType.TOPOGRAPHY -> Color(0xFF1E281C)
-                    GisBasemapType.SATELLITE -> Color(0xFF0D1D13)
-                    GisBasemapType.RADAR -> NavyDark
+                if (isWhiteTheme) {
+                    when (activeBasemap) {
+                        GisBasemapType.TOPOGRAPHY -> Color(0xFFFAFBF8)
+                        GisBasemapType.SATELLITE -> Color(0xFFF3F7F2)
+                        GisBasemapType.RADAR -> Color(0xFFF8FAFC)
+                    }
+                } else {
+                    when (activeBasemap) {
+                        GisBasemapType.TOPOGRAPHY -> Color(0xFF1E281C)
+                        GisBasemapType.SATELLITE -> Color(0xFF0D1D13)
+                        GisBasemapType.RADAR -> NavyDark
+                    }
                 }
+            )
+            .then(
+                if (!isFullscreen) Modifier.border(
+                    1.dp,
+                    if (isWhiteTheme) Gray300 else Gray800,
+                    RoundedCornerShape(16.dp)
+                ) else Modifier
             )
     ) {
         Canvas(
@@ -250,6 +273,7 @@ private fun GisMapContent(
                     drawTopographyBasemap(
                         width = width,
                         height = height,
+                        isWhiteTheme = isWhiteTheme,
                         toScreenOffset = ::toScreenOffset,
                         textMeasurer = textMeasurer
                     )
@@ -258,6 +282,7 @@ private fun GisMapContent(
                     drawSatelliteBasemap(
                         width = width,
                         height = height,
+                        isWhiteTheme = isWhiteTheme,
                         toScreenOffset = ::toScreenOffset,
                         textMeasurer = textMeasurer
                     )
@@ -266,6 +291,7 @@ private fun GisMapContent(
                     drawRadarBasemap(
                         width = width,
                         height = height,
+                        isWhiteTheme = isWhiteTheme,
                         radarAngle = radarAngle,
                         toScreenOffset = ::toScreenOffset,
                         textMeasurer = textMeasurer
@@ -331,9 +357,10 @@ private fun GisMapContent(
                     val screenPts = waypoints.map { toScreenOffset(it.first, it.second) }
 
                     // Outer casing for contrast on terrain & satellite
+                    val casingColor = if (isWhiteTheme) Color(0xFF334155).copy(alpha = 0.90f) else Color.Black.copy(alpha = 0.75f)
                     for (i in 0 until screenPts.size - 1) {
                         drawLine(
-                            color = Color.Black.copy(alpha = 0.75f),
+                            color = casingColor,
                             start = screenPts[i],
                             end = screenPts[i + 1],
                             strokeWidth = 10f * zoomScale.coerceIn(0.8f, 1.4f)
@@ -409,7 +436,7 @@ private fun GisMapContent(
                         val pillHeight = 18f * zoomScale.coerceIn(0.85f, 1.2f)
 
                         drawRoundRect(
-                            color = NavyDark.copy(alpha = 0.90f),
+                            color = if (isWhiteTheme) Color.White.copy(alpha = 0.96f) else NavyDark.copy(alpha = 0.90f),
                             topLeft = Offset(labelPt.x - pillWidth / 2, labelPt.y - 24f * zoomScale),
                             size = Size(pillWidth, pillHeight),
                             cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
@@ -419,14 +446,14 @@ private fun GisMapContent(
                             topLeft = Offset(labelPt.x - pillWidth / 2, labelPt.y - 24f * zoomScale),
                             size = Size(pillWidth, pillHeight),
                             cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
-                            style = Stroke(width = 1.2f)
+                            style = Stroke(width = 1.4f)
                         )
                         drawText(
                             textMeasurer = textMeasurer,
                             text = statusText,
                             topLeft = Offset(labelPt.x - pillWidth / 2 + 4f, labelPt.y - 23f * zoomScale),
                             style = TextStyle(
-                                color = Color.White,
+                                color = if (isWhiteTheme) NavyDark else Color.White,
                                 fontSize = (7.5f * zoomScale.coerceIn(0.85f, 1.15f)).sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.SansSerif
@@ -492,10 +519,10 @@ private fun GisMapContent(
                         text = labelText,
                         topLeft = Offset(center.x - 30f, center.y + baseRadius + 4f),
                         style = TextStyle(
-                            color = Color.White,
+                            color = if (isWhiteTheme) NavyDark else Color.White,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            background = Color.Black.copy(alpha = 0.55f)
+                            background = if (isWhiteTheme) Color.White.copy(alpha = 0.90f) else Color.Black.copy(alpha = 0.55f)
                         )
                     )
                 }
@@ -618,7 +645,7 @@ private fun GisMapContent(
 
                     // Weather station badge card
                     drawRoundRect(
-                        color = NavyDark.copy(alpha = 0.92f),
+                        color = if (isWhiteTheme) Color.White.copy(alpha = 0.96f) else NavyDark.copy(alpha = 0.92f),
                         topLeft = wOffset,
                         size = Size(bWidth, bHeight),
                         cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
@@ -638,7 +665,7 @@ private fun GisMapContent(
                         text = line1,
                         topLeft = Offset(wOffset.x + 5f, wOffset.y + 3f),
                         style = TextStyle(
-                            color = Color.White,
+                            color = if (isWhiteTheme) NavyDark else Color.White,
                             fontSize = (9.5f * zoomScale.coerceIn(0.85f, 1.2f)).sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.SansSerif
@@ -652,7 +679,7 @@ private fun GisMapContent(
                         text = line2,
                         topLeft = Offset(wOffset.x + 5f, wOffset.y + 22f),
                         style = TextStyle(
-                            color = CyanAccent,
+                            color = if (isWhiteTheme) Color(0xFF0284C7) else CyanAccent,
                             fontSize = (8.5f * zoomScale.coerceIn(0.85f, 1.2f)).sp,
                             fontWeight = FontWeight.Medium,
                             fontFamily = FontFamily.SansSerif
@@ -670,8 +697,8 @@ private fun GisMapContent(
                 .align(Alignment.TopEnd)
                 .padding(10.dp),
             shape = RoundedCornerShape(20.dp),
-            color = NavyDark.copy(alpha = 0.94f),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Gray700),
+            color = if (isWhiteTheme) Color.White.copy(alpha = 0.96f) else NavyDark.copy(alpha = 0.94f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, if (isWhiteTheme) Gray300 else Gray700),
             shadowElevation = 6.dp
         ) {
             Row(
@@ -679,6 +706,22 @@ private fun GisMapContent(
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Theme toggle button: White Map / Dark Map
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isWhiteTheme) Color(0xFFFEF3C7) else Gray800,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isWhiteTheme) Color(0xFFF59E0B) else Gray600),
+                    modifier = Modifier.clickable { onToggleTheme() }
+                ) {
+                    Text(
+                        text = if (isWhiteTheme) "☀️ White" else "🌙 Dark",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isWhiteTheme) Color(0xFF92400E) else Color.White,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                    )
+                }
+
                 GisBasemapType.values().forEach { mode ->
                     val isSelected = activeBasemap == mode
                     Surface(
@@ -690,7 +733,7 @@ private fun GisMapContent(
                             text = mode.iconLabel,
                             fontSize = 11.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) Color.White else Gray300,
+                            color = if (isSelected) Color.White else if (isWhiteTheme) Gray700 else Gray300,
                             modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
                         )
                     }
@@ -699,8 +742,8 @@ private fun GisMapContent(
                 // Weather overlay toggle chip
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = if (isWeatherActive) CyanAccent.copy(alpha = 0.25f) else Color.Transparent,
-                    border = if (isWeatherActive) androidx.compose.foundation.BorderStroke(1.dp, CyanAccent) else null,
+                    color = if (isWeatherActive) (if (isWhiteTheme) BlueLight else CyanAccent.copy(alpha = 0.25f)) else Color.Transparent,
+                    border = if (isWeatherActive) androidx.compose.foundation.BorderStroke(1.dp, if (isWhiteTheme) BlueAccent else CyanAccent) else null,
                     modifier = Modifier.clickable { isWeatherActive = !isWeatherActive }
                 ) {
                     Row(
@@ -712,7 +755,7 @@ private fun GisMapContent(
                             text = if (isWeatherActive) "🌦️ Weather ON" else "🌦️ Weather OFF",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isWeatherActive) CyanAccent else Gray400
+                            color = if (isWeatherActive) (if (isWhiteTheme) BlueAccent else CyanAccent) else if (isWhiteTheme) Gray600 else Gray400
                         )
                     }
                 }
@@ -727,7 +770,10 @@ private fun GisMapContent(
                 .align(Alignment.TopStart)
                 .padding(10.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(NavySurface.copy(alpha = 0.92f))
+                .background(if (isWhiteTheme) Color.White.copy(alpha = 0.96f) else NavySurface.copy(alpha = 0.92f))
+                .then(
+                    if (isWhiteTheme) Modifier.border(1.dp, Gray300, RoundedCornerShape(10.dp)) else Modifier
+                )
                 .padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -736,17 +782,17 @@ private fun GisMapContent(
                 modifier = Modifier
                     .size(8.dp)
                     .clip(CircleShape)
-                    .background(if (activeBasemap == GisBasemapType.RADAR) RiskCritical else CyanAccent)
+                    .background(if (activeBasemap == GisBasemapType.RADAR) RiskCritical else if (isWhiteTheme) BlueAccent else CyanAccent)
             )
             Text(
                 text = when (activeBasemap) {
-                    GisBasemapType.TOPOGRAPHY -> "⛰️ TOPOGRAPHIC CONTOURS • 200m"
-                    GisBasemapType.SATELLITE -> "🛰️ SENTINEL-2 MSI • 10m HIGH-RES"
-                    GisBasemapType.RADAR -> "📡 LIVE RADAR • HIMALAYAN SECTOR"
+                    GisBasemapType.TOPOGRAPHY -> if (isWhiteTheme) "⛰️ WHITE TOPOGRAPHY MAP • 100m CONTOURS" else "⛰️ TOPOGRAPHIC CONTOURS • 200m"
+                    GisBasemapType.SATELLITE -> if (isWhiteTheme) "🛰️ LIGHT TERRAIN • SENTINEL-2" else "🛰️ SENTINEL-2 MSI • 10m HIGH-RES"
+                    GisBasemapType.RADAR -> if (isWhiteTheme) "📡 LIGHT GIS RADAR • SECTOR 4" else "📡 LIVE RADAR • HIMALAYAN SECTOR"
                 },
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = if (isWhiteTheme) NavyDark else Color.White,
                 letterSpacing = 0.4.sp
             )
         }
@@ -754,6 +800,10 @@ private fun GisMapContent(
         // ════════════════════════════════════════════════════════════════
         // FLOATING CONTROLS: ZOOM / PAN / FULLSCREEN BAR (RIGHT MIDDLE)
         // ════════════════════════════════════════════════════════════════
+        val btnBg = if (isWhiteTheme) Color.White.copy(alpha = 0.96f) else NavySurface.copy(alpha = 0.92f)
+        val btnBorder = if (isWhiteTheme) Gray300 else Gray700
+        val iconTint = if (isWhiteTheme) NavyDark else Color.White
+
         Column(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
@@ -763,36 +813,39 @@ private fun GisMapContent(
             // Zoom in button
             Surface(
                 shape = CircleShape,
-                color = NavySurface.copy(alpha = 0.92f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Gray700),
+                color = btnBg,
+                border = androidx.compose.foundation.BorderStroke(1.dp, btnBorder),
+                shadowElevation = if (isWhiteTheme) 3.dp else 0.dp,
                 modifier = Modifier
                     .size(36.dp)
                     .clickable { onZoomChange((zoomScale + 0.3f).coerceAtMost(4.0f)) }
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Add, contentDescription = "Zoom In", tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Add, contentDescription = "Zoom In", tint = iconTint, modifier = Modifier.size(18.dp))
                 }
             }
 
             // Zoom out button
             Surface(
                 shape = CircleShape,
-                color = NavySurface.copy(alpha = 0.92f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Gray700),
+                color = btnBg,
+                border = androidx.compose.foundation.BorderStroke(1.dp, btnBorder),
+                shadowElevation = if (isWhiteTheme) 3.dp else 0.dp,
                 modifier = Modifier
                     .size(36.dp)
                     .clickable { onZoomChange((zoomScale - 0.3f).coerceAtLeast(0.75f)) }
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Remove, contentDescription = "Zoom Out", tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Remove, contentDescription = "Zoom Out", tint = iconTint, modifier = Modifier.size(18.dp))
                 }
             }
 
             // Reset Center / Zoom button
             Surface(
                 shape = CircleShape,
-                color = NavySurface.copy(alpha = 0.92f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Gray700),
+                color = btnBg,
+                border = androidx.compose.foundation.BorderStroke(1.dp, btnBorder),
+                shadowElevation = if (isWhiteTheme) 3.dp else 0.dp,
                 modifier = Modifier
                     .size(36.dp)
                     .clickable {
@@ -801,15 +854,16 @@ private fun GisMapContent(
                     }
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.MyLocation, contentDescription = "Reset View", tint = CyanAccent, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.MyLocation, contentDescription = "Reset View", tint = if (isWhiteTheme) BlueAccent else CyanAccent, modifier = Modifier.size(18.dp))
                 }
             }
 
             // Fullscreen toggle button
             Surface(
                 shape = CircleShape,
-                color = if (isFullscreen) RiskCritical else NavySurface.copy(alpha = 0.92f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Gray700),
+                color = if (isFullscreen) RiskCritical else btnBg,
+                border = androidx.compose.foundation.BorderStroke(1.dp, if (isFullscreen) RiskCritical else btnBorder),
+                shadowElevation = if (isWhiteTheme) 3.dp else 0.dp,
                 modifier = Modifier
                     .size(36.dp)
                     .clickable { onToggleFullscreen() }
@@ -818,7 +872,7 @@ private fun GisMapContent(
                     Icon(
                         if (isFullscreen) Icons.Default.Close else Icons.Default.Fullscreen,
                         contentDescription = if (isFullscreen) "Exit Fullscreen" else "Expand Fullscreen Map",
-                        tint = Color.White,
+                        tint = if (isFullscreen) Color.White else iconTint,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -836,7 +890,9 @@ private fun GisMapContent(
                     .padding(10.dp)
                     .widthIn(max = 290.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = NavySurface.copy(alpha = 0.94f))
+                colors = CardDefaults.cardColors(containerColor = if (isWhiteTheme) Color.White.copy(alpha = 0.96f) else NavySurface.copy(alpha = 0.94f)),
+                border = if (isWhiteTheme) androidx.compose.foundation.BorderStroke(1.dp, Gray300) else null,
+                elevation = CardDefaults.cardElevation(defaultElevation = if (isWhiteTheme) 4.dp else 0.dp)
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
                     Row(
@@ -848,7 +904,7 @@ private fun GisMapContent(
                             text = currentSelected.name.split("-").first().trim(),
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp,
-                            color = Color.White,
+                            color = if (isWhiteTheme) NavyDark else Color.White,
                             maxLines = 1
                         )
                         val chipColor = when (currentSelected.riskLevel) {
@@ -875,13 +931,13 @@ private fun GisMapContent(
                         text = "${currentSelected.district}, ${currentSelected.state} • 🌡️ ${currentSelected.weatherTemp}°C (${currentSelected.weatherCondition})",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.White
+                        color = if (isWhiteTheme) NavyMedium else Color.White
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "🌧️ Rain: ${currentSelected.rainfall.toInt()}mm • 💨 Wind: ${currentSelected.weatherWind} • Soil: ${currentSelected.soilMoisture.toInt()}%",
                         fontSize = 9.5.sp,
-                        color = Gray300
+                        color = if (isWhiteTheme) Gray700 else Gray300
                     )
                 }
             }
@@ -895,8 +951,8 @@ private fun GisMapContent(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 10.dp),
             shape = RoundedCornerShape(20.dp),
-            color = NavyDark.copy(alpha = 0.94f),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Gray700),
+            color = if (isWhiteTheme) Color.White.copy(alpha = 0.96f) else NavyDark.copy(alpha = 0.94f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, if (isWhiteTheme) Gray300 else Gray700),
             shadowElevation = 6.dp
         ) {
             Row(
@@ -908,7 +964,7 @@ private fun GisMapContent(
                     text = "ROADS:",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Gray400
+                    color = if (isWhiteTheme) Gray700 else Gray400
                 )
                 // Safe (Green)
                 Row(
@@ -916,7 +972,7 @@ private fun GisMapContent(
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(RoadSafeGreen))
-                    Text("Safe (Green)", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = RoadSafeGreenLight)
+                    Text("Safe (Green)", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = if (isWhiteTheme) Color(0xFF15803D) else RoadSafeGreenLight)
                 }
                 // Medium (Orange)
                 Row(
@@ -924,7 +980,7 @@ private fun GisMapContent(
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(RoadMediumOrange))
-                    Text("Medium (Orange)", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = RoadMediumOrangeLight)
+                    Text("Medium (Orange)", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = if (isWhiteTheme) Color(0xFFC2410C) else RoadMediumOrangeLight)
                 }
                 // Danger (Red)
                 Row(
@@ -932,7 +988,7 @@ private fun GisMapContent(
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(RoadDangerRed))
-                    Text("Danger (Red)", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = RoadDangerRedLight)
+                    Text("Danger (Red)", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = if (isWhiteTheme) Color(0xFFB91C1C) else RoadDangerRedLight)
                 }
             }
         }
@@ -943,95 +999,176 @@ private fun GisMapContent(
                 .align(Alignment.BottomEnd)
                 .padding(10.dp)
                 .clip(RoundedCornerShape(6.dp))
-                .background(Color.Black.copy(alpha = 0.60f))
+                .background(if (isWhiteTheme) Color.White.copy(alpha = 0.94f) else Color.Black.copy(alpha = 0.60f))
+                .then(
+                    if (isWhiteTheme) Modifier.border(1.dp, Gray300, RoundedCornerShape(6.dp)) else Modifier
+                )
                 .padding(horizontal = 6.dp, vertical = 3.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = "0 ━━ 10km • WGS84",
+                text = if (activeBasemap == GisBasemapType.TOPOGRAPHY) "0 ━━ 10km • WGS84 Topo" else "0 ━━ 10km • WGS84",
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Bold,
-                color = Gray300
+                color = if (isWhiteTheme) NavyDark else Gray300
             )
         }
     }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TOPOGRAPHY BASEMAP DRAWING HELPER
+// TOPOGRAPHY BASEMAP DRAWING HELPER (WHITE & DARK HYPSOMETRIC THEMES)
 // ═════════════════════════════════════════════════════════════════════════════
 private fun DrawScope.drawTopographyBasemap(
     width: Float,
     height: Float,
+    isWhiteTheme: Boolean,
     toScreenOffset: (Double, Double) -> Offset,
     textMeasurer: androidx.compose.ui.text.TextMeasurer
 ) {
     // 1. Hypsometric relief elevation gradient background
-    drawRect(
-        brush = Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFF282730), // High northern shale ridge (3,500m+)
-                Color(0xFF382F22), // High alpine escarpment (2,500m - 3,500m)
-                Color(0xFF343324), // Mid mountain slope (1,500m - 2,500m)
-                Color(0xFF233221), // Foothill evergreen zone (1,000m - 1,500m)
-                Color(0xFF1B2B1B)  // Low river valley floor (< 1,000m)
+    if (isWhiteTheme) {
+        // High-contrast clean cartographic paper hypsometric tinting
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFFFFFFFF), // High alpine snow & glacier cap (4,000m+)
+                    Color(0xFFFAF5EE), // High ridge limestone scree (3,200m - 4,000m)
+                    Color(0xFFF3ECE0), // Alpine meadow & upper slopes (2,200m - 3,200m)
+                    Color(0xFFEAF2E7), // Sub-alpine temperate forest (1,400m - 2,200m)
+                    Color(0xFFF3FAF1)  // Foothill valleys & river beds (< 1,400m)
+                )
             )
         )
-    )
 
-    // 2. Intermediate fine contour lines (every 250m)
-    val contourFineColor = Color(0xFF6B5C4B).copy(alpha = 0.45f)
-    for (i in 1..8) {
-        val yBase = height * (0.10f + i * 0.10f)
+        // Subtle 3D mountain relief slope hillshade bands
+        val hillshadeColor = Color(0xFFD4C3AC).copy(alpha = 0.28f)
+        val shadeRidge1 = Path().apply {
+            moveTo(0f, height * 0.12f)
+            cubicTo(width * 0.30f, height * 0.08f, width * 0.65f, height * 0.18f, width, height * 0.14f)
+            lineTo(width, height * 0.20f)
+            cubicTo(width * 0.60f, height * 0.24f, width * 0.25f, height * 0.16f, 0f, height * 0.18f)
+            close()
+        }
+        drawPath(shadeRidge1, color = hillshadeColor)
+
+        val shadeRidge2 = Path().apply {
+            moveTo(0f, height * 0.36f)
+            cubicTo(width * 0.35f, height * 0.32f, width * 0.70f, height * 0.42f, width, height * 0.38f)
+            lineTo(width, height * 0.44f)
+            cubicTo(width * 0.65f, height * 0.48f, width * 0.30f, height * 0.40f, 0f, height * 0.42f)
+            close()
+        }
+        drawPath(shadeRidge2, color = hillshadeColor)
+
+        // Cartographic coordinate graticule lines (28°N, 26°N, 89°E, 91°E, 93°E)
+        val graticuleColor = Color(0xFFCBD5E1).copy(alpha = 0.65f)
+        for (i in 1..4) {
+            val gx = width * (i / 5f)
+            drawLine(
+                color = graticuleColor,
+                start = Offset(gx, 0f),
+                end = Offset(gx, height),
+                strokeWidth = 0.9f,
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 8f))
+            )
+            val gy = height * (i / 5f)
+            drawLine(
+                color = graticuleColor,
+                start = Offset(0f, gy),
+                end = Offset(width, gy),
+                strokeWidth = 0.9f,
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 8f))
+            )
+        }
+    } else {
+        // High-contrast tactical emergency dark hypsometric tinting
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFF282730), // High northern shale ridge (3,500m+)
+                    Color(0xFF382F22), // High alpine escarpment (2,500m - 3,500m)
+                    Color(0xFF343324), // Mid mountain slope (1,500m - 2,500m)
+                    Color(0xFF233221), // Foothill evergreen zone (1,000m - 1,500m)
+                    Color(0xFF1B2B1B)  // Low river valley floor (< 1,000m)
+                )
+            )
+        )
+    }
+
+    // 2. Intermediate fine contour lines (every 100m - 250m)
+    val contourFineColor = if (isWhiteTheme) Color(0xFF9E8468).copy(alpha = 0.55f) else Color(0xFF6B5C4B).copy(alpha = 0.45f)
+    for (i in 1..10) {
+        val yBase = height * (0.07f + i * 0.088f)
         val p = Path().apply {
             moveTo(0f, yBase)
             cubicTo(
-                width * 0.22f, yBase - 28f,
-                width * 0.48f, yBase + 34f,
-                width * 0.76f, yBase - 18f
+                width * 0.22f, yBase - 26f,
+                width * 0.48f, yBase + 32f,
+                width * 0.76f, yBase - 16f
             )
-            quadraticTo(width * 0.90f, yBase + 12f, width, yBase)
+            quadraticTo(width * 0.90f, yBase + 14f, width, yBase)
         }
-        drawPath(p, color = contourFineColor, style = Stroke(width = 1f))
+        drawPath(p, color = contourFineColor, style = Stroke(width = if (isWhiteTheme) 1.2f else 1.0f))
     }
 
-    // 3. Bold index contour lines (1,000m, 2,000m, 3,000m, 4,000m)
-    val indexColor = Color(0xFFC7A57E)
+    // 3. Bold index contour lines (1,000m, 1,800m, 2,600m, 3,400m, 4,200m)
+    val indexColor = if (isWhiteTheme) Color(0xFF5C3D1E) else Color(0xFFC7A57E)
     val indexContours = listOf(
-        Pair(0.20f, "3,500m"),
-        Pair(0.38f, "2,800m"),
-        Pair(0.55f, "2,000m"),
-        Pair(0.72f, "1,400m")
+        Pair(0.16f, "4,000m High Ridge"),
+        Pair(0.32f, "3,200m Alpine Crest"),
+        Pair(0.49f, "2,400m Mid Ridge"),
+        Pair(0.66f, "1,600m Sub-Alpine"),
+        Pair(0.83f, "800m Valley Basin")
     )
     indexContours.forEach { (fraction, label) ->
         val yBase = height * fraction
         val path = Path().apply {
             moveTo(0f, yBase)
             cubicTo(
-                width * 0.28f, yBase - 36f,
-                width * 0.58f, yBase + 42f,
-                width * 0.82f, yBase - 22f
+                width * 0.28f, yBase - 34f,
+                width * 0.58f, yBase + 38f,
+                width * 0.82f, yBase - 20f
             )
-            quadraticTo(width * 0.92f, yBase + 16f, width, yBase - 8f)
+            quadraticTo(width * 0.92f, yBase + 16f, width, yBase - 6f)
         }
-        drawPath(path, color = indexColor, style = Stroke(width = 2.2f))
+        drawPath(path, color = indexColor, style = Stroke(width = if (isWhiteTheme) 2.4f else 2.2f))
 
-        // Elevation contour label text
+        // Elevation contour label chip
+        val labelW = 110f
+        val labelH = 18f
+        val tagX = width * 0.16f
+        val tagY = yBase - 22f
+
+        drawRoundRect(
+            color = if (isWhiteTheme) Color.White.copy(alpha = 0.95f) else Color.Black.copy(alpha = 0.65f),
+            topLeft = Offset(tagX, tagY),
+            size = Size(labelW, labelH),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
+        )
+        if (isWhiteTheme) {
+            drawRoundRect(
+                color = indexColor.copy(alpha = 0.50f),
+                topLeft = Offset(tagX, tagY),
+                size = Size(labelW, labelH),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
+                style = Stroke(width = 1f)
+            )
+        }
         drawText(
             textMeasurer = textMeasurer,
             text = label,
-            topLeft = Offset(width * 0.18f, yBase - 22f),
+            topLeft = Offset(tagX + 4f, tagY + 2f),
             style = TextStyle(
                 color = indexColor,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold,
-                background = Color.Black.copy(alpha = 0.5f)
+                fontSize = 8.5.sp,
+                fontWeight = FontWeight.Bold
             )
         )
     }
 
-    // 4. Closed summit knoll contour loops (mountain crests)
+    // 4. Closed summit knoll contour loops & Himalayan mountain crests
     val summits = listOf(
         Pair(toScreenOffset(27.80, 88.55), "▲ Kanchenjunga Spur 4,280m"),
         Pair(toScreenOffset(27.58, 88.58), "▲ Mangan Crest 2,450m"),
@@ -1043,26 +1180,46 @@ private fun DrawScope.drawTopographyBasemap(
 
     summits.forEach { (pos, name) ->
         // Concentric summit ring contours
-        drawCircle(color = indexColor.copy(alpha = 0.5f), radius = 22f, center = pos, style = Stroke(1.5f))
-        drawCircle(color = indexColor.copy(alpha = 0.7f), radius = 13f, center = pos, style = Stroke(1.5f))
+        drawCircle(color = indexColor.copy(alpha = if (isWhiteTheme) 0.65f else 0.50f), radius = 22f, center = pos, style = Stroke(1.6f))
+        drawCircle(color = indexColor.copy(alpha = if (isWhiteTheme) 0.85f else 0.70f), radius = 13f, center = pos, style = Stroke(1.6f))
         // Peak glyph
-        drawCircle(color = Color(0xFFFFD54F), radius = 3.5f, center = pos)
+        drawCircle(color = if (isWhiteTheme) Color(0xFFD97706) else Color(0xFFFFD54F), radius = 4f, center = pos)
+        drawCircle(color = Color.White, radius = 1.8f, center = pos)
+
+        // Summit badge card
+        val nameW = (name.length * 5.6f).coerceAtLeast(110f)
+        val nameH = 17f
+        val cardX = pos.x - 40f
+        val cardY = pos.y - 20f
+
+        drawRoundRect(
+            color = if (isWhiteTheme) Color.White.copy(alpha = 0.95f) else Color.Black.copy(alpha = 0.70f),
+            topLeft = Offset(cardX, cardY),
+            size = Size(nameW, nameH),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
+        )
+        drawRoundRect(
+            color = if (isWhiteTheme) Color(0xFFD97706) else Color(0xFFFFD54F),
+            topLeft = Offset(cardX, cardY),
+            size = Size(nameW, nameH),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
+            style = Stroke(width = 1.0f)
+        )
 
         drawText(
             textMeasurer = textMeasurer,
             text = name,
-            topLeft = Offset(pos.x - 35f, pos.y - 18f),
+            topLeft = Offset(cardX + 4f, cardY + 2f),
             style = TextStyle(
-                color = Color(0xFFFFE082),
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold,
-                background = Color.Black.copy(alpha = 0.6f)
+                color = if (isWhiteTheme) NavyDark else Color(0xFFFFE082),
+                fontSize = 8.5.sp,
+                fontWeight = FontWeight.Bold
             )
         )
     }
 
-    // 5. River valley drainage line (Teesta River Gorge)
-    val riverPath = Path().apply {
+    // 5. River valley drainage network (Teesta River Gorge & tributaries)
+    val teestaRiver = Path().apply {
         val p1 = toScreenOffset(27.85, 88.62)
         val p2 = toScreenOffset(27.55, 88.54)
         val p3 = toScreenOffset(27.35, 88.50)
@@ -1071,32 +1228,65 @@ private fun DrawScope.drawTopographyBasemap(
         cubicTo(p2.x - 20f, p2.y, p2.x + 10f, p3.y, p3.x, p3.y)
         quadraticTo(p3.x - 15f, (p3.y + p4.y) / 2f, p4.x, p4.y)
     }
-    drawPath(riverPath, color = Color(0xFF388E3C).copy(alpha = 0.7f), style = Stroke(width = 3.5f))
+
+    if (isWhiteTheme) {
+        // Crisp hydro blue river with protective bank casing
+        drawPath(teestaRiver, color = Color(0xFFBAE6FD), style = Stroke(width = 7.5f))
+        drawPath(teestaRiver, color = Color(0xFF0284C7), style = Stroke(width = 4.2f))
+    } else {
+        drawPath(teestaRiver, color = Color(0xFF0F324D), style = Stroke(width = 6.0f))
+        drawPath(teestaRiver, color = Color(0xFF3880A8), style = Stroke(width = 3.5f))
+    }
+
+    // Dikchu Chu tributary
+    val dikchuRiver = Path().apply {
+        val d1 = toScreenOffset(27.42, 88.68)
+        val d2 = toScreenOffset(27.45, 88.51)
+        moveTo(d1.x, d1.y)
+        quadraticTo((d1.x + d2.x) / 2f + 10f, (d1.y + d2.y) / 2f, d2.x, d2.y)
+    }
+    drawPath(dikchuRiver, color = if (isWhiteTheme) Color(0xFF0284C7) else Color(0xFF3880A8), style = Stroke(width = 2.8f))
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// SATELLITE BASEMAP DRAWING HELPER
+// SATELLITE BASEMAP DRAWING HELPER (WHITE & DARK HYBRID)
 // ═════════════════════════════════════════════════════════════════════════════
 private fun DrawScope.drawSatelliteBasemap(
     width: Float,
     height: Float,
+    isWhiteTheme: Boolean,
     toScreenOffset: (Double, Double) -> Offset,
     textMeasurer: androidx.compose.ui.text.TextMeasurer
 ) {
-    // 1. Base dark forest canopy satellite gradient
-    drawRect(
-        brush = Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFF13191F), // High alpine granite moraine
-                Color(0xFF0F2618), // Deep sub-alpine conifer forest
-                Color(0xFF132F1E), // Mid-altitude broadleaf canopy
-                Color(0xFF183B25), // Subtropical foothills
-                Color(0xFF1F442E)  // River valley vegetation
+    if (isWhiteTheme) {
+        // High-clarity light satellite & terrain hybrid
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFFF1F5F9), // Alpine glacier & white granite
+                    Color(0xFFE2E8F0), // Alpine rock moraine
+                    Color(0xFFD5DFD1), // Sub-alpine forest canopy
+                    Color(0xFFE1EAE0), // Mid-elevation valley vegetation
+                    Color(0xFFEDF2EC)  // Foothill alluvial plains
+                )
             )
         )
-    )
+    } else {
+        // Deep tactical space-borne satellite imagery
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFF13191F), // High alpine granite moraine
+                    Color(0xFF0F2618), // Deep sub-alpine conifer forest
+                    Color(0xFF132F1E), // Mid-altitude broadleaf canopy
+                    Color(0xFF183B25), // Subtropical foothills
+                    Color(0xFF1F442E)  // River valley vegetation
+                )
+            )
+        )
+    }
 
-    // 2. Snow / Glacier fields on northern Himalayan peaks (Sikkim high range)
+    // 2. Snow / Glacier fields on northern Himalayan peaks
     val snowRidge = Path().apply {
         moveTo(0f, 0f)
         lineTo(width, 0f)
@@ -1109,8 +1299,8 @@ private fun DrawScope.drawSatelliteBasemap(
         lineTo(0f, height * 0.15f)
         close()
     }
-    drawPath(snowRidge, color = Color(0xFFD6E4ED).copy(alpha = 0.85f))
-    drawPath(snowRidge, color = Color(0xFFFFFFFF).copy(alpha = 0.5f), style = Stroke(2f))
+    drawPath(snowRidge, color = if (isWhiteTheme) Color(0xFFFFFFFF).copy(alpha = 0.95f) else Color(0xFFD6E4ED).copy(alpha = 0.85f))
+    drawPath(snowRidge, color = if (isWhiteTheme) Color(0xFF93C5FD).copy(alpha = 0.6f) else Color(0xFFFFFFFF).copy(alpha = 0.5f), style = Stroke(2f))
 
     // 3. Bare rock alpine granite scree bands on steep ridges
     val rockBand = Path().apply {
@@ -1128,10 +1318,9 @@ private fun DrawScope.drawSatelliteBasemap(
         )
         close()
     }
-    drawPath(rockBand, color = Color(0xFF383C42).copy(alpha = 0.75f))
+    drawPath(rockBand, color = if (isWhiteTheme) Color(0xFF94A3B8).copy(alpha = 0.40f) else Color(0xFF383C42).copy(alpha = 0.75f))
 
-    // 4. Glacial river network (Teesta River system & tributaries)
-    // Main Teesta River branch
+    // 4. Glacial river network (Teesta River system)
     val teestaPath = Path().apply {
         val s1 = toScreenOffset(27.85, 88.62)
         val s2 = toScreenOffset(27.60, 88.56)
@@ -1142,10 +1331,8 @@ private fun DrawScope.drawSatelliteBasemap(
         cubicTo(s2.x + 15f, s2.y - 10f, s2.x - 10f, s3.y - 20f, s3.x, s3.y)
         cubicTo(s3.x - 20f, s4.y - 15f, s4.x + 10f, s4.y + 10f, s5.x, s5.y)
     }
-    // Water halo & casing
-    drawPath(teestaPath, color = Color(0xFF0F324D), style = Stroke(width = 7f))
-    // Silt-laden glacial blue river channel
-    drawPath(teestaPath, color = Color(0xFF3880A8), style = Stroke(width = 4.5f))
+    drawPath(teestaPath, color = if (isWhiteTheme) Color(0xFFBAE6FD) else Color(0xFF0F324D), style = Stroke(width = 7f))
+    drawPath(teestaPath, color = if (isWhiteTheme) Color(0xFF0284C7) else Color(0xFF3880A8), style = Stroke(width = 4.5f))
 
     // Tributary river branch (Dikchu Chu)
     val dikchuPath = Path().apply {
@@ -1154,7 +1341,7 @@ private fun DrawScope.drawSatelliteBasemap(
         moveTo(d1.x, d1.y)
         quadraticTo((d1.x + d2.x) / 2f + 10f, (d1.y + d2.y) / 2f, d2.x, d2.y)
     }
-    drawPath(dikchuPath, color = Color(0xFF3880A8), style = Stroke(width = 3f))
+    drawPath(dikchuPath, color = if (isWhiteTheme) Color(0xFF0284C7) else Color(0xFF3880A8), style = Stroke(width = 3f))
 
     // 5. Agricultural terrace hillside patches & settlement clusters
     val settlements = listOf(
@@ -1164,12 +1351,12 @@ private fun DrawScope.drawSatelliteBasemap(
         toScreenOffset(25.17, 93.02)  // Haflong
     )
     settlements.forEach { pt ->
-        drawCircle(color = Color(0xFF425540).copy(alpha = 0.8f), radius = 18f, center = pt)
-        drawCircle(color = Color(0xFF5E6D5C).copy(alpha = 0.6f), radius = 10f, center = pt)
+        drawCircle(color = if (isWhiteTheme) Color(0xFF65A30D).copy(alpha = 0.5f) else Color(0xFF425540).copy(alpha = 0.8f), radius = 18f, center = pt)
+        drawCircle(color = if (isWhiteTheme) Color(0xFF4D7C0F).copy(alpha = 0.4f) else Color(0xFF5E6D5C).copy(alpha = 0.6f), radius = 10f, center = pt)
     }
 
-    // 6. Orbital satellite HUD crosshairs (+) and lat/lon coordinate markers
-    val reticleColor = Color(0xFF7CB342).copy(alpha = 0.40f)
+    // 6. Orbital satellite HUD crosshairs (+)
+    val reticleColor = if (isWhiteTheme) Color(0xFF475569).copy(alpha = 0.45f) else Color(0xFF7CB342).copy(alpha = 0.40f)
     val crosshairPoints = listOf(
         Offset(width * 0.25f, height * 0.30f),
         Offset(width * 0.75f, height * 0.30f),
@@ -1183,24 +1370,28 @@ private fun DrawScope.drawSatelliteBasemap(
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// RADAR GIS BASEMAP DRAWING HELPER
+// RADAR GIS BASEMAP DRAWING HELPER (WHITE & DARK THEMES)
 // ═════════════════════════════════════════════════════════════════════════════
 private fun DrawScope.drawRadarBasemap(
     width: Float,
     height: Float,
+    isWhiteTheme: Boolean,
     radarAngle: Float,
     toScreenOffset: (Double, Double) -> Offset,
     textMeasurer: androidx.compose.ui.text.TextMeasurer
 ) {
-    // 1. Tactical deep cyber navy base
-    drawRect(color = Color(0xFF070F22))
+    // 1. Base canvas
+    drawRect(color = if (isWhiteTheme) Color(0xFFF8FAFC) else Color(0xFF070F22))
 
     // 2. Radar range rings centered on Mangan Sector
     val center = toScreenOffset(27.51, 88.53)
     val ringRads = listOf(60f, 130f, 210f, 300f)
+    val ringColor = if (isWhiteTheme) Color(0xFF0284C7).copy(alpha = 0.35f) else CyanAccent.copy(alpha = 0.16f)
+    val ringTextColor = if (isWhiteTheme) Color(0xFF0369A1) else CyanAccent.copy(alpha = 0.6f)
+
     ringRads.forEachIndexed { idx, r ->
         drawCircle(
-            color = CyanAccent.copy(alpha = 0.16f),
+            color = ringColor,
             radius = r,
             center = center,
             style = Stroke(width = 1.5f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f)))
@@ -1209,7 +1400,7 @@ private fun DrawScope.drawRadarBasemap(
             textMeasurer = textMeasurer,
             text = "${(idx + 1) * 15}km",
             topLeft = Offset(center.x + r + 4f, center.y - 8f),
-            style = TextStyle(color = CyanAccent.copy(alpha = 0.6f), fontSize = 9.sp, fontWeight = FontWeight.SemiBold)
+            style = TextStyle(color = ringTextColor, fontSize = 9.sp, fontWeight = FontWeight.SemiBold)
         )
     }
 
@@ -1221,14 +1412,14 @@ private fun DrawScope.drawRadarBasemap(
         (center.y + sweepLength * sin(rad)).toFloat()
     )
     drawLine(
-        color = CyanAccent.copy(alpha = 0.85f),
+        color = if (isWhiteTheme) Color(0xFF0284C7).copy(alpha = 0.90f) else CyanAccent.copy(alpha = 0.85f),
         start = center,
         end = sweepEnd,
-        strokeWidth = 2f
+        strokeWidth = 2.2f
     )
 
-    // 4. Subtle tactical coordinate grid
-    val gridColor = Color(0xFF132845)
+    // 4. Tactical coordinate grid
+    val gridColor = if (isWhiteTheme) Color(0xFFE2E8F0) else Color(0xFF132845)
     for (x in 0..6) {
         val gx = width * (x / 6f)
         drawLine(color = gridColor, start = Offset(gx, 0f), end = Offset(gx, height), strokeWidth = 1f)
