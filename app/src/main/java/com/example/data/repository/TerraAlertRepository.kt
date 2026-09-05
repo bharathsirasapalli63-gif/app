@@ -421,22 +421,70 @@ class TerraAlertRepository(
                 riskLevel = RiskLevel.CRITICAL,
                 riskPercentage = 92,
                 reason = "Massive active rockslide at 29th Mile with debris blocking both carriageways.",
-                blockedSection = "29th Mile to Teesta Bridge",
+                blockedSection = "29th Mile to Teesta Bridge (km 32-38)",
                 alternativeRouteName = "Alternative Route via Lava - Reshi - Rhenock Pass",
                 alternativeRouteRisk = RiskLevel.LOW,
-                alternativeRouteRiskPercentage = 24
+                alternativeRouteRiskPercentage = 20
             ),
             RoadCorridor(
                 id = "road-nh29",
                 name = "NH-29 (Dimapur - Kohima Highway via Zubza)",
                 status = RoadStatus.UNSAFE,
-                riskLevel = RiskLevel.CRITICAL,
-                riskPercentage = 88,
-                reason = "Predicted severe slope failure; 14mm road tension crack actively propagating.",
+                riskLevel = RiskLevel.MODERATE,
+                riskPercentage = 68,
+                reason = "Predicted slope creep; 14mm tension crack widening. Single lane caution traffic.",
                 blockedSection = "Zubza Sinking Segment km 142-145",
                 alternativeRouteName = "Safe Detour via Medziphema - Jakhama Ridge",
-                alternativeRouteRisk = RiskLevel.MODERATE,
-                alternativeRouteRiskPercentage = 35
+                alternativeRouteRisk = RiskLevel.LOW,
+                alternativeRouteRiskPercentage = 22
+            ),
+            RoadCorridor(
+                id = "road-nh310",
+                name = "NH-310 (Gangtok - Sherathang - Nathu La Pass)",
+                status = RoadStatus.OPEN,
+                riskLevel = RiskLevel.LOW,
+                riskPercentage = 14,
+                reason = "Clear, stable bedrock slopes reinforced with rock bolting & high-tensile wire mesh.",
+                blockedSection = "None (All 54 km fully operational)",
+                alternativeRouteName = "Corridor is 100% Safe & Clear",
+                alternativeRouteRisk = RiskLevel.LOW,
+                alternativeRouteRiskPercentage = 10
+            ),
+            RoadCorridor(
+                id = "road-nh54",
+                name = "NH-54 (Lumding - Haflong - Silchar Corridor)",
+                status = RoadStatus.OPEN,
+                riskLevel = RiskLevel.LOW,
+                riskPercentage = 18,
+                reason = "Normal vehicular movement. Culvert drainage cleared by BRO teams.",
+                blockedSection = "None (Clear All Traffic)",
+                alternativeRouteName = "Direct Haflong Pass Clear",
+                alternativeRouteRisk = RiskLevel.LOW,
+                alternativeRouteRiskPercentage = 12
+            ),
+            RoadCorridor(
+                id = "road-sh8",
+                name = "SH-8 (Mangan - Dikchu Valley Arterial Link)",
+                status = RoadStatus.UNSAFE,
+                riskLevel = RiskLevel.MODERATE,
+                riskPercentage = 64,
+                reason = "Minor mud spill on shoulder; heavy trucks restricted. Escorted passage for light vehicles.",
+                blockedSection = "Dikchu Hydel Turn km 18",
+                alternativeRouteName = "Tinkitam bypass ridge",
+                alternativeRouteRisk = RiskLevel.LOW,
+                alternativeRouteRiskPercentage = 19
+            ),
+            RoadCorridor(
+                id = "road-lava",
+                name = "Lava - Reshi - Rhenock Detour Highway",
+                status = RoadStatus.OPEN,
+                riskLevel = RiskLevel.LOW,
+                riskPercentage = 15,
+                reason = "Designated high-elevation bypass route open for all Gangtok-bound relief traffic.",
+                blockedSection = "None (Emergency Bypass Operational)",
+                alternativeRouteName = "Primary safe bypass corridor",
+                alternativeRouteRisk = RiskLevel.LOW,
+                alternativeRouteRiskPercentage = 15
             )
         )
 

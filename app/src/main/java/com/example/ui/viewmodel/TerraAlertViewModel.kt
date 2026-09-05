@@ -10,12 +10,20 @@ import com.example.data.repository.TerraAlertRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+enum class GisBasemapType(val displayName: String, val iconLabel: String) {
+    TOPOGRAPHY("Topography", "⛰️ Topo"),
+    SATELLITE("Satellite", "🛰️ Satellite"),
+    RADAR("Radar GIS", "📡 Radar")
+}
+
 data class MapLayerConfig(
     val riskZones: Boolean = true,
     val sensors: Boolean = true,
     val roads: Boolean = true,
     val shelters: Boolean = true,
-    val rainRadar: Boolean = true
+    val rainRadar: Boolean = true,
+    val weatherOverlay: Boolean = true,
+    val basemapType: GisBasemapType = GisBasemapType.TOPOGRAPHY
 )
 
 class TerraAlertViewModel(application: Application) : AndroidViewModel(application) {
@@ -127,8 +135,14 @@ class TerraAlertViewModel(application: Application) : AndroidViewModel(applicati
             "roads" -> current.copy(roads = !current.roads)
             "shelters" -> current.copy(shelters = !current.shelters)
             "rainRadar" -> current.copy(rainRadar = !current.rainRadar)
+            "weatherOverlay" -> current.copy(weatherOverlay = !current.weatherOverlay)
             else -> current
         }
+    }
+
+    fun setBasemapType(type: GisBasemapType) {
+        _mapLayers.value = _mapLayers.value.copy(basemapType = type)
+        showToast("Switched map basemap to ${type.displayName}")
     }
 
     fun requestSwitchPortal(target: AppPortal) {

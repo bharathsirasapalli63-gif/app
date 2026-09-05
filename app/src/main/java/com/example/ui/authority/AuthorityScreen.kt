@@ -39,10 +39,12 @@ fun AuthorityScreen(
     onRejectReport: (String) -> Unit,
     onAssignReport: (String, String) -> Unit,
     onBroadcastAlert: (title: String, msg: String, district: String, level: RiskLevel, action: String) -> Unit,
-    onToggleRoadStatus: (String, RoadStatus) -> Unit
+    onToggleRoadStatus: (String, RoadStatus) -> Unit,
+    onBasemapChange: ((com.example.ui.viewmodel.GisBasemapType) -> Unit)? = null
 ) {
     var showBroadcastDialog by remember { mutableStateOf(false) }
     var authorityTab by remember { mutableStateOf("triage") } // triage, map, roads, population
+    var isMapExpanded by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier
@@ -253,7 +255,38 @@ fun AuthorityScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text("GIS Command Layer Controls", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("GIS Command Layer Controls", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (isMapExpanded) NavyDark else Gray100,
+                                    modifier = Modifier.clickable { isMapExpanded = !isMapExpanded }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            if (isMapExpanded) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                                            contentDescription = null,
+                                            tint = if (isMapExpanded) CyanAccent else Gray700,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Text(
+                                            if (isMapExpanded) "Compact (460dp)" else "Expand (560dp)",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isMapExpanded) CyanAccent else Gray700
+                                        )
+                                    }
+                                }
+                            }
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -287,9 +320,10 @@ fun AuthorityScreen(
                         selectedZoneId = selectedZoneId,
                         mapLayers = mapLayers,
                         onSelectZone = onSelectZone,
+                        onBasemapChange = onBasemapChange,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(320.dp)
+                            .height(if (isMapExpanded) 560.dp else 460.dp)
                     )
                 }
             }

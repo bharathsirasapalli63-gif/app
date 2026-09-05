@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.*
+import com.example.ui.common.LocalizationHelper
 import com.example.ui.gis.GisRiskCanvasMap
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MapLayerConfig
@@ -35,10 +36,13 @@ fun CitizenHomeScreen(
     onSelectZone: (String) -> Unit,
     onToggle3D: () -> Unit,
     onReportHazardClick: () -> Unit,
-    onNavigateToAlerts: () -> Unit
+    onNavigateToAlerts: () -> Unit,
+    onBasemapChange: ((com.example.ui.viewmodel.GisBasemapType) -> Unit)? = null,
+    selectedLanguage: String = "en"
 ) {
     val selectedZone = locations.find { it.id == selectedZoneId } ?: locations.first()
     var showDetourDetail by remember { mutableStateOf(false) }
+    var isMapExpanded by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier
@@ -128,26 +132,57 @@ fun CitizenHomeScreen(
                     ) {
                         Icon(Icons.Default.Map, contentDescription = null, tint = NavyMedium, modifier = Modifier.size(18.dp))
                         Text(
-                            text = "Interactive Geospatial Risk Map",
+                            text = LocalizationHelper.getString("interactive_gis_map", selectedLanguage),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                             color = NavyDark
                         )
                     }
 
-                    // 3D Terrain Cross-Section Button
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = BlueLight,
-                        modifier = Modifier.clickable { onToggle3D() }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        // Map Size Expand/Tall Toggle (540dp to 750dp)
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isMapExpanded) NavyDark else Gray100,
+                            modifier = Modifier.clickable { isMapExpanded = !isMapExpanded }
                         ) {
-                            Icon(Icons.Default.Layers, contentDescription = null, tint = BlueAccent, modifier = Modifier.size(14.dp))
-                            Text("3D Strata", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BlueAccent)
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    if (isMapExpanded) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                                    contentDescription = null,
+                                    tint = if (isMapExpanded) CyanAccent else Gray700,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    if (isMapExpanded) "Standard (540dp)" else "Tall Map (750dp)",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isMapExpanded) CyanAccent else Gray700
+                                )
+                            }
+                        }
+
+                        // 3D Terrain Cross-Section Button
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = BlueLight,
+                            modifier = Modifier.clickable { onToggle3D() }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(Icons.Default.Layers, contentDescription = null, tint = BlueAccent, modifier = Modifier.size(14.dp))
+                                Text("3D Strata", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BlueAccent)
+                            }
                         }
                     }
                 }
@@ -159,9 +194,10 @@ fun CitizenHomeScreen(
                     selectedZoneId = selectedZoneId,
                     mapLayers = mapLayers,
                     onSelectZone = onSelectZone,
+                    onBasemapChange = onBasemapChange,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(230.dp)
+                        .height(if (isMapExpanded) 750.dp else 540.dp)
                 )
             }
         }
@@ -312,8 +348,6 @@ fun CitizenHomeScreen(
 
         // 4. Highway Corridor Road Safety & Alternative Safe Detours Card
         item {
-            val blockedRoad = roads.firstOrNull { it.status != RoadStatus.OPEN } ?: roads.first()
-
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -329,90 +363,129 @@ fun CitizenHomeScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Default.AltRoute, contentDescription = null, tint = RiskCritical)
+                            Icon(Icons.Default.AltRoute, contentDescription = null, tint = RoadDangerRed)
                             Column {
                                 Text(
-                                    text = "Highway Safety & Safe Detour",
+                                    text = LocalizationHelper.getString("road_safety_corridor", selectedLanguage),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = NavyDark
                                 )
                                 Text(
-                                    text = blockedRoad.name,
+                                    text = "Real-Time BRO Highway Telemetry • NE India",
                                     fontSize = 11.sp,
                                     color = Gray600
                                 )
                             }
                         }
 
+                        // Summary pill
                         Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = RiskCriticalLight
+                            shape = RoundedCornerShape(12.dp),
+                            color = Gray100
                         ) {
                             Text(
-                                text = blockedRoad.status.name,
-                                color = RiskCritical,
+                                text = "${roads.count { it.status == RoadStatus.OPEN }} Safe • ${roads.count { it.status == RoadStatus.BLOCKED }} Blocked",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                color = NavyDark,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = blockedRoad.reason,
-                        fontSize = 11.sp,
-                        color = Gray600
-                    )
-
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Safe Alternative Corridor Card
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = RiskSafeLight,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, RiskSafe.copy(alpha = 0.4f)),
-                        modifier = Modifier.fillMaxWidth()
+                    // Road Status Legend Bar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(NavySurface)
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(RoadSafeGreen))
+                            Text("Safe: Green", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = RoadSafeGreenLight)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(RoadMediumOrange))
+                            Text("Medium: Orange", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = RoadMediumOrangeLight)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(RoadDangerRed))
+                            Text("Danger: Red", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = RoadDangerRedLight)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // List of Road Corridors
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        roads.forEach { road ->
+                            val (badgeBg, badgeText, badgeColor) = when (road.status) {
+                                RoadStatus.OPEN -> Triple(RoadSafeGreenLight, "SAFE (GREEN)", RoadSafeGreen)
+                                RoadStatus.UNSAFE -> Triple(RoadMediumOrangeLight, "MEDIUM (ORANGE)", RoadMediumOrange)
+                                RoadStatus.BLOCKED -> Triple(RoadDangerRedLight, "DANGER (RED)", RoadDangerRed)
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = Gray50,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, badgeColor.copy(alpha = 0.35f)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = RiskSafe, modifier = Modifier.size(16.dp))
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = road.name,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = NavyDark
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = badgeBg
+                                        ) {
+                                            Text(
+                                                text = badgeText,
+                                                color = badgeColor,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "RECOMMENDED SAFE DETOUR",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = RiskSafe
+                                        text = road.reason,
+                                        fontSize = 11.sp,
+                                        color = Gray700
                                     )
+
+                                    if (road.status != RoadStatus.OPEN) {
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = RoadSafeGreen, modifier = Modifier.size(14.dp))
+                                            Text(
+                                                text = "Detour: ${road.alternativeRouteName} (${road.alternativeRouteRiskPercentage}% Risk)",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = RoadSafeGreen
+                                            )
+                                        }
+                                    }
                                 }
-                                Text(
-                                    text = "${blockedRoad.alternativeRouteRiskPercentage}% Risk",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = RiskSafe
-                                )
                             }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = blockedRoad.alternativeRouteName,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = NavyDark
-                            )
-                            Text(
-                                text = "Clear for all light vehicles. Monitored by BRO & Sikkim Police checkpoints.",
-                                fontSize = 10.sp,
-                                color = Gray600
-                            )
                         }
                     }
                 }

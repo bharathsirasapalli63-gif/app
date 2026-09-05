@@ -119,7 +119,9 @@ class MainActivity : ComponentActivity() {
                                     onOpenSos = { viewModel.toggleSosDialog(true) },
                                     onSubmitReport = { cat, desc, loc, photo ->
                                         viewModel.submitReport(cat, desc, loc, photo)
-                                    }
+                                    },
+                                    onBasemapChange = { viewModel.setBasemapType(it) },
+                                    selectedLanguage = selectedLanguage
                                 )
 
                                 AppPortal.AUTHORITY -> AuthorityScreen(
@@ -137,7 +139,8 @@ class MainActivity : ComponentActivity() {
                                     onBroadcastAlert = { title, msg, dist, lvl, act ->
                                         viewModel.broadcastAlert(title, msg, dist, lvl, act)
                                     },
-                                    onToggleRoadStatus = { id, status -> viewModel.toggleRoadStatus(id, status) }
+                                    onToggleRoadStatus = { id, status -> viewModel.toggleRoadStatus(id, status) },
+                                    onBasemapChange = { viewModel.setBasemapType(it) }
                                 )
 
                                 AppPortal.FIELD_OFFICER -> FieldOfficerScreen(

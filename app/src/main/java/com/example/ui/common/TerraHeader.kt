@@ -87,9 +87,10 @@ fun TerraHeader(
                             }
                         }
                         Text(
-                            text = "AI + IoT Landslide Platform • NE India",
+                            text = LocalizationHelper.getString("app_subtitle", selectedLanguage),
                             fontSize = 10.sp,
-                            color = Gray300
+                            color = Gray300,
+                            maxLines = 1
                         )
                     }
                 }
@@ -191,18 +192,37 @@ fun TerraHeader(
                             expanded = showLangMenu,
                             onDismissRequest = { showLangMenu = false }
                         ) {
-                            val languages = listOf(
-                                "en" to "English",
-                                "hi" to "हिंदी (Hindi)",
-                                "as" to "অসমীয়া (Assamese)",
-                                "bn" to "বাংলা (Bengali)",
-                                "ne" to "नेपाली (Nepali)"
-                            )
-                            languages.forEach { (code, label) ->
+                            LocalizationHelper.supportedLanguages.forEach { lang ->
+                                val isCurrent = lang.code == selectedLanguage
                                 DropdownMenuItem(
-                                    text = { Text(label, fontSize = 13.sp) },
+                                    text = {
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = lang.nativeName,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                                                    color = if (isCurrent) BlueAccent else NavyDark
+                                                )
+                                                if (isCurrent) {
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Icon(
+                                                        Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        tint = BlueAccent,
+                                                        modifier = Modifier.size(14.dp)
+                                                    )
+                                                }
+                                            }
+                                            Text(
+                                                text = "${lang.name} • ${lang.region}",
+                                                fontSize = 10.sp,
+                                                color = Gray600
+                                            )
+                                        }
+                                    },
                                     onClick = {
-                                        onSelectLanguage(code)
+                                        onSelectLanguage(lang.code)
                                         showLangMenu = false
                                     }
                                 )

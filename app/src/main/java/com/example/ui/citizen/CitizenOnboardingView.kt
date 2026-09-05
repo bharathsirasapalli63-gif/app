@@ -2,8 +2,10 @@ package com.example.ui.citizen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -97,24 +99,22 @@ fun CitizenOnboardingView(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                        val langs = listOf(
-                            "en" to "English (Default)",
-                            "hi" to "हिंदी (Hindi)",
-                            "as" to "অসমীয়া (Assamese)",
-                            "bn" to "বাংলা (Bengali)",
-                            "ne" to "नेपाली (Nepali)"
-                        )
-
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            langs.forEach { (code, label) ->
-                                val isSelected = selectedLanguage == code
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 280.dp)
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            com.example.ui.common.LocalizationHelper.supportedLanguages.forEach { lang ->
+                                val isSelected = selectedLanguage == lang.code
                                 Surface(
                                     shape = RoundedCornerShape(10.dp),
                                     color = if (isSelected) BlueLight else Gray50,
                                     border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, BlueAccent) else null,
-                                    onClick = { onSelectLanguage(code) },
+                                    onClick = { onSelectLanguage(lang.code) },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Row(
@@ -122,12 +122,19 @@ fun CitizenOnboardingView(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text(
-                                            text = label,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                            color = if (isSelected) NavyDark else Gray800,
-                                            fontSize = 13.sp
-                                        )
+                                        Column {
+                                            Text(
+                                                text = lang.nativeName,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isSelected) NavyDark else Gray800,
+                                                fontSize = 13.sp
+                                            )
+                                            Text(
+                                                text = "${lang.name} • ${lang.region}",
+                                                fontSize = 10.sp,
+                                                color = Gray600
+                                            )
+                                        }
                                         if (isSelected) {
                                             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = BlueAccent, modifier = Modifier.size(18.dp))
                                         }
@@ -136,7 +143,7 @@ fun CitizenOnboardingView(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
                             onClick = { step = 2 },

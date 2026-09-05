@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.CitizenReportEntity
 import com.example.data.model.*
+import com.example.ui.common.LocalizationHelper
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MapLayerConfig
 
@@ -30,7 +31,9 @@ fun CitizenPortalView(
     onSelectZone: (String) -> Unit,
     onToggle3D: () -> Unit,
     onOpenSos: () -> Unit,
-    onSubmitReport: (hazardType: String, description: String, locationName: String, photoUrl: String?) -> Unit
+    onSubmitReport: (hazardType: String, description: String, locationName: String, photoUrl: String?) -> Unit,
+    onBasemapChange: ((com.example.ui.viewmodel.GisBasemapType) -> Unit)? = null,
+    selectedLanguage: String = "en"
 ) {
     val selectedZone = locations.find { it.id == selectedZoneId } ?: locations.first()
 
@@ -41,11 +44,11 @@ fun CitizenPortalView(
                 tonalElevation = 8.dp
             ) {
                 val navItems = listOf(
-                    Triple("home", "Home", Icons.Default.Home),
-                    Triple("alerts", "Alerts", Icons.Default.Notifications),
-                    Triple("monitoring", "Sensors", Icons.Default.Sensors),
-                    Triple("report", "Report", Icons.Default.Campaign),
-                    Triple("guide", "Guide", Icons.Default.MenuBook)
+                    Triple("home", LocalizationHelper.getString("nav_home", selectedLanguage), Icons.Default.Home),
+                    Triple("alerts", LocalizationHelper.getString("nav_alerts", selectedLanguage), Icons.Default.Notifications),
+                    Triple("monitoring", LocalizationHelper.getString("nav_sensors", selectedLanguage), Icons.Default.Sensors),
+                    Triple("report", LocalizationHelper.getString("nav_report", selectedLanguage), Icons.Default.Campaign),
+                    Triple("guide", LocalizationHelper.getString("nav_guide", selectedLanguage), Icons.Default.MenuBook)
                 )
 
                 navItems.forEach { (tabId, label, icon) ->
@@ -91,7 +94,9 @@ fun CitizenPortalView(
                     onSelectZone = onSelectZone,
                     onToggle3D = onToggle3D,
                     onReportHazardClick = { onTabSelect("report") },
-                    onNavigateToAlerts = { onTabSelect("alerts") }
+                    onNavigateToAlerts = { onTabSelect("alerts") },
+                    onBasemapChange = onBasemapChange,
+                    selectedLanguage = selectedLanguage
                 )
                 "alerts" -> CitizenAlertsScreen(
                     alerts = alerts,
@@ -119,7 +124,9 @@ fun CitizenPortalView(
                     onSelectZone = onSelectZone,
                     onToggle3D = onToggle3D,
                     onReportHazardClick = { onTabSelect("report") },
-                    onNavigateToAlerts = { onTabSelect("alerts") }
+                    onNavigateToAlerts = { onTabSelect("alerts") },
+                    onBasemapChange = onBasemapChange,
+                    selectedLanguage = selectedLanguage
                 )
             }
         }
